@@ -1,8 +1,10 @@
 import React from 'react';
-import { TouchableOpacity, Text, Alert, View } from 'react-native';
+import { TouchableOpacity, Text, Alert } from 'react-native';
 import styled from 'styled-components/native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
+import * as FileSystem from 'expo-file-system';
 import { colors } from '../Styles/appStyle';
 
 const FileButton = styled.TouchableOpacity`
@@ -31,65 +33,66 @@ const Icon = styled.Image`
   height: 24px;
 `;
 
-const FileNameText = styled.Text`
-  margin-top: 5px;
-  font-size: 14px;
-  color: #333;
-`;
-
-const RemoveButton = styled.TouchableOpacity`
-  margin-left: 10px;
-  background-color: ${colors.red};
-  padding: 5px 10px;
-  border-radius: 5px;
-`;
-
-const RemoveButtonText = styled.Text`
-  color: white;
-  font-size: 12px;
-`;
-
-const FilePicker = ({ label, files = [], setFiles, removeFile, error }) => {
+const FilePicker = ({ label, fileName, setFileName, setFileUri, setFileMimeType, error }) => {
   const handleFilePick = async () => {
     try {
       Alert.alert(
         'Select Option',
-        'Choose files from the library or capture photos',
+        'Choose a file from the library or capture a photo',
         [
           {
-            text: 'Choose Files',
+            text: 'Capture Photo',
+            onPress: async () => {
+              const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+              if (cameraPermission.granted) {
+                let result = await ImagePicker.launchCameraAsync({
+                  mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                  allowsEditing: true,
+                  quality: 1,
+                });
+  
+                if (!result.canceled) {
+                  const compressedImage = await compressImage(result.assets[0].uri);
+                  setFileName(result.assets[0].fileName || 'captured_image.jpg');
+                  setFileUri(compressedImage.uri);
+                  setFileMimeType(result.assets[0].mimeType || 'image/jpeg');
+                }
+              } else {
+                Alert.alert('Permission Required', 'Camera permission is required to capture photos');
+              }
+            },
+          },
+          {
+            text: 'Choose File',
             onPress: async () => {
               try {
                 let result = await DocumentPicker.getDocumentAsync({
                   type: ['image/*', 'application/pdf'],
                   copyToCacheDirectory: true,
-                  multiple: true,
                 });
-  
-                if (result.type !== 'cancel' && result.assets) {
-                  const selectedFiles = result.assets.map(file => ({
-                    name: file.name,
-                    uri: file.uri,
-                    mimeType: file.mimeType || file.type || 'application/octet-stream',
-                  }));
-  
-                  // Prevent duplicates based on URI
-                  const uniqueFiles = [
-                    ...files,
-                    ...selectedFiles.filter(
-                      (newFile) => !files.some((existingFile) => existingFile.uri === newFile.uri)
-                    ),
-                  ];
-  
-                  if (uniqueFiles.length > 5) {
-                    Alert.alert('Limit Exceeded', 'You can select a maximum of 5 unique images/files.');
-                    return;
+          
+                if (result.type !== 'cancel') {
+                  const fileUri = result.assets[0].uri;
+                  const fileName = result.assets[0].name;
+                  const mimeType = result.assets[0].mimeType || result.type;
+          
+                  let compressedImageUri = fileUri;
+                  if (result.assets[0].mimeType && result.assets[0].mimeType.startsWith('image/')) {
+                    const compressedImage = await compressImage(fileUri);
+                    compressedImageUri = compressedImage.uri || compressedImage;
                   }
-  
-                  setFiles(uniqueFiles);
+          
+                  // setFile({
+                  //   uri: fileUri,
+                  //   name: fileName,
+                  //   mimeType: mimeType
+                  // });
+                  setFileName(fileName);
+                  setFileUri(compressedImageUri);
+                  setFileMimeType(mimeType);
                 }
               } catch (error) {
-                console.error('Error while picking files:', error);
+                console.error('Error while picking file or compressing:', error);
               }
             },
           },
@@ -101,31 +104,45 @@ const FilePicker = ({ label, files = [], setFiles, removeFile, error }) => {
         { cancelable: true }
       );
     } catch (err) {
-      Alert.alert('No File Selected', 'You have not selected any files. Please select files.');
+      Alert.alert('No File Selected', 'You have not selected a file. Please select a file.');
     }
   };
   
 
+  const compressImage = async (uri) => {
+    let compressQuality = 1;
+    const targetSize = 200 * 1024; // 200 KB
+
+    let compressedImage = await ImageManipulator.manipulateAsync(
+      uri,
+      [],
+      { compress: compressQuality, format: ImageManipulator.SaveFormat.JPEG }
+    );
+
+    let imageInfo = await FileSystem.getInfoAsync(compressedImage.uri);
+
+    while (imageInfo.size > targetSize && compressQuality > 0.1) {
+      compressQuality -= 0.1;
+
+      compressedImage = await ImageManipulator.manipulateAsync(
+        uri,
+        [],
+        { compress: compressQuality, format: ImageManipulator.SaveFormat.JPEG }
+      );
+
+      imageInfo = await FileSystem.getInfoAsync(compressedImage.uri);
+    }
+
+    return compressedImage;
+  };
 
   return (
     <>
       <Label>{label}</Label>
       <FileButton onPress={handleFilePick}>
-        <InputText>{files.length > 0 ? `${files.length} files selected` : 'No files selected'}</InputText>
+        <InputText>{fileName || 'No file selected'}</InputText>
         <Icon source={require('../../assets/images/Upload-Icon.png')} />
       </FileButton>
-      {files.length > 0 && (
-        <View>
-          {files.map((file, index) => (
-            <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}>
-              <FileNameText>{file.name}</FileNameText>
-              <RemoveButton onPress={() => removeFile(index)}> 
-                <RemoveButtonText>Remove</RemoveButtonText>
-              </RemoveButton>
-            </View>
-          ))}
-        </View>
-      )}
       {error && (
         <Text style={{ marginTop: 7, color: colors.red, fontSize: 12 }}>
           {error}

@@ -13,8 +13,8 @@ const db_name = getDbName();
 export const endpoint = `${localhost}${apiURL}`;
 
 export const productListURL = `${endpoint}/products/${db_name}/`;
-export const productDetailURL = id => `${endpoint}/products/${db_name}/${id}/`;
 export const ordersListURL = `${endpoint}/order_list/${db_name}/`;
+export const productDetailURL = id => `${endpoint}/products/${db_name}/${id}/`;
 export const addToCartURL = `${endpoint}/add_to_cart/${db_name}/`;
 export const orderSummaryURL = `${endpoint}/order_summary/${db_name}/`;
 export const orderListURL = `${endpoint}/customer_orders/${db_name}/`;
@@ -25,7 +25,7 @@ export const countryListURL = `${endpoint}/countries/`;
 export const userIDURL = `${endpoint}/user_id/`;
 export const customerIDURL = `${endpoint}/user_customer_id/${db_name}/`;
 export const addressListURL = addressType =>
-`${endpoint}/addresses/${db_name}/?address_type=${addressType}`;
+  `${endpoint}/addresses/${db_name}/?address_type=${addressType}`;
 export const addressCreateURL = `${endpoint}/address/create/${db_name}/`;
 export const addressUpdateURL = id => `${endpoint}/address/update/${db_name}/${id}/`;
 export const addressDeleteURL = id => `${endpoint}/address/delete/${db_name}/${id}/`;
@@ -66,4 +66,7 @@ export const getEmpAttendanceData = `${endpoint}/get_employee_attendance/${db_na
 export const getEmpHolidayData = `${endpoint}/get_holiday_data/${db_name}/`;
 export const empCheckData = `${endpoint}/process_employee_attendance/${db_name}/`;
 export const getClaimApproverList = `${endpoint}/get_claim_approve_list/${db_name}/`;
+export const getfiletotext = `${endpoint}/get_file_to_text/${db_name}/`;
+export const processAppointee = `${endpoint}/process_employee_job/${db_name}/`;
 export const processProduct = `${endpoint}/process_product/${db_name}/`;
+

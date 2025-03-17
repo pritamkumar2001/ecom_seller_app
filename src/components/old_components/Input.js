@@ -1,6 +1,6 @@
 import React from 'react';
 import {View, Text, TextInput, StyleSheet} from 'react-native';
-import { colors } from '../../Styles/appStyle';
+import { colors } from '../../Styles/appStyle'
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 const Input = ({
   label,
@@ -62,14 +62,14 @@ const Input = ({
 const style = StyleSheet.create({
   label: {
     marginVertical: 5,
-    fontSize: 16,
+    fontSize: 14,
     color: colors.grey,
   },
   inputContainer: {
     height: 55,
     backgroundColor: colors.light,
     flexDirection: 'row',
-    // paddingHorizontal: 10,
+    paddingHorizontal: 15,
     borderWidth: 0.5,
   },
 });
